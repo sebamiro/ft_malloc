@@ -2,15 +2,10 @@
 #include <pthread.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdio.h>
 
 t_m_pages g_malloc_pages = {0};
 pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-size_t
-align(size_t s, size_t mask)
-{
-    return (s + mask) & ~mask;
-}
 
 static inline void*
 new_block(block_t **free, block_t **alloc, const size_t size)
@@ -79,7 +74,7 @@ malloc_large(size_t size)
     if ((block->next = g_malloc_pages.large))
         g_malloc_pages.large->prev = block;
     g_malloc_pages.large = block;
-    return block + sizeof(block_t);
+    return (void*)block + sizeof(block_t);
 }
 
 void *
@@ -90,20 +85,25 @@ malloc(size_t size)
     if (!size)
         return NULL;
     pthread_mutex_lock(&g_malloc_mutex);
+    printf("malloc:\t%zu ", size);
     switch ((size > TINY_ZONE) + (size > SMALL_ZONE)) {
         case MALLOC_TINY: {
-            malloc_little(&g_malloc_pages.tiny, TINY_ZONE, size);
+            p = malloc_little(&g_malloc_pages.tiny, TINY_ZONE, size);
+            printf("TINY\n");
             break;
         }
         case MALLOC_SMALL: {
-            malloc_little(&g_malloc_pages.small, SMALL_ZONE, size);
+                               printf("SMALL\n");
+            p = malloc_little(&g_malloc_pages.small, SMALL_ZONE, size);
             break;
         }
         default: {
             p = malloc_large(size);
+            printf("LARGE\n");
             break;
         } 
     }
+    printf(" in %p\n", p);
     pthread_mutex_unlock(&g_malloc_mutex);
     return p;
 }

@@ -4,6 +4,7 @@
 # include <sys/mman.h>
 
 # include <pthread.h>
+# include <stdbool.h>
 
 # define SMALL_ZONE		(1 << 10)
 # define TINY_ZONE		(1 << 6)
@@ -44,5 +45,10 @@ extern t_m_pages g_malloc_pages;
 extern pthread_mutex_t g_malloc_mutex;
 
 void *malloc(size_t size);
+void free(void *p);
+
+bool is_valid_block(const void *p);
+bool is_valid_sized(const void *p, size_t size);
+size_t align(size_t s, size_t mask);
 
 #endif
